@@ -116,6 +116,7 @@ class GPTConfig:
     n_embd: int = 768
     dropout: float = 0.0
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
+    device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
     # TODO: add a tokenizer option
 
 class GPT(nn.Module):
