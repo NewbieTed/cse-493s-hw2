@@ -8,10 +8,11 @@ torch.manual_seed(1)
 
 # Hyper parameters
 batch_size = 4 # Num of blocks to process in parallel
-block_size = 32 # size of block (number of characters) (aka sequence length)
+block_size = 8 # size of block (number of characters) (aka sequence length)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 learning_rate = 1e-3
-dataset = 'aaa.txt'
+dataset = 'loveML.txt'
+layers = 1 # default should be 12
 # ---------------
 
 # Data initialization and encoding
@@ -20,6 +21,8 @@ with open(dataset, 'r', encoding = 'utf-8') as file:
 
 chars = sorted(list(set(text)))
 vocab_size = len(chars)
+
+block_size = len(text) - 1 # Want to memorize the whole data set (when small)
 
 stoi = { ch:i for i,ch in enumerate(chars) }
 itos = { i:ch for i,ch in enumerate(chars) }

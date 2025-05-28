@@ -19,6 +19,7 @@ batch_size = s.batch_size
 block_size = s.block_size
 learning_rate = s.learning_rate
 device = s.device
+layers = s.layers
 # ---------------
 data = s.data
 vocab_size = s.vocab_size
@@ -61,7 +62,7 @@ def main():
         name = argv[1]
 
     # Model and optimizer instantiation
-    config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size)
+    config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer = layers)
     model = m.GPT(config)
     model = model.to(model.config.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
@@ -69,11 +70,12 @@ def main():
     # This training loop is kinda arbitrary and will not converge on complicated txt files
     loss = train_step(model, optimizer)
     count = 0
-    while loss > 1.5:
+    while loss > 1e-6:
         loss = train_step(model, optimizer)
-        if count % 100 == 0:
+        if count % 10 == 0:
             print(f"Steps = {count}, loss = {loss.item()}")
         count += 1
+    print(f"Final loss: {loss.item()} at step {count}")
     save_model(model, name)
 
 if __name__ == '__main__':
