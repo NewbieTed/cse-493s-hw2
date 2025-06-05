@@ -36,12 +36,16 @@ def generate_from_scratch(model, max_tokens):
 
     
 def main():
+    log_file = open("Part1Inference.log", "w")
+    sys.stdout = log_file
     argv = sys.argv
     if len(argv) != 3:
         print("Did not receive command line arguments for model and num tokens to generate")
         return
     model = load_model(argv[1])
-    return print(s.decode(generate_from_scratch(model, int(argv[2]))))
+    print(s.decode(generate_from_scratch(model, int(argv[2]))))
+    log_file.close()
+    return
 
 if __name__ == '__main__':
     main()

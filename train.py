@@ -61,6 +61,9 @@ def main():
     else:
         name = argv[1]
 
+    log_file = open("Part1Training.log", "w")
+    sys.stdout = log_file
+
     # Model and optimizer instantiation
     config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer = layers)
     model = m.GPT(config)
@@ -77,6 +80,9 @@ def main():
         count += 1
     print(f"Final loss: {loss.item()} at step {count}")
     save_model(model, name)
+
+    log_file.close()
+    return
 
 if __name__ == '__main__':
     main()
