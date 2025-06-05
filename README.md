@@ -1,4 +1,4 @@
 Part 2 Explanation:
 
 2.1:
-As you can see from the file gen_data.py, I chose to generate my data by randomly choose either the numbers 97 or 113, then randomly choosing one of the three operations. I then did that operation on two numbers randomly chosen from between 0 and 1000, modded by the previously chosed number, and printed the result in the expected format.
+As you can see from the file gen_data.py, for each number 97 or 113 and each operation, I randomly chose two numbers from 1 to 1000 (0 is not a natural number) and did the prescribed arithmetic and mod operation. I then printed that data to the correct file in the expected format. I did this for 10000 lines for training, and 2000 each for validation and testing.
