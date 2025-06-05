@@ -21,25 +21,25 @@ for j in range(len(name)):
             num = test_size
             file_name = name[j] + "test" + ".txt"
 
+        log_file = open(file_name, "w")
         for _ in range(num):
-            log_file = open(file_name, "w")
             sys.stdout = log_file
             a = r.randint(1,max)
             b = r.randint(1,max)
             if j > 2:
-                num = 113
+                div = 113
             else:
-                num = 97
+                div = 97
             if j % 3 == 0:
-                c = (a + b) % num
+                c = (a + b) % div
                 print(a, " + ", b, " = ", c)
             elif j % 3 == 1:
-                c = (a - b) % num
+                c = (a - b) % div
                 print(a, " - ", b, " = ", c)
             else:
-                c = (a / b) % num
+                c = (a / b) % div 
                 print(a, " / ", b, " = ", c)
-            log_file.close()
+        log_file.close()
             
         
 
