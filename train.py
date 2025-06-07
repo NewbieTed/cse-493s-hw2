@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import model as m
+import random
 
 import setup as s
 
@@ -20,9 +21,11 @@ block_size = s.block_size
 learning_rate = s.learning_rate
 device = s.device
 layers = s.layers
+n_embd = s.n_embd
+n_head = s.n_head
 # ---------------
-data = s.data
-vocab_size = s.vocab_size
+# data = s.data
+# vocab_size = s.vocab_size
 
 def get_loss(logits, targets):
     B, T, C = logits.shape
@@ -33,8 +36,14 @@ def get_loss(logits, targets):
     loss = F.cross_entropy(logits, targets)
     return loss
 
-def train_step(model, optimizer):
-    idx, targets = s.get_batch()
+def get_batch(data):
+    idx = torch.randint(len(data) - block_size, (batch_size,))
+    x = torch.stack([data[i:i+block_size] for i in idx])
+    y = torch.stack([data[i+1:i+block_size+1] for i in idx])
+    return x.to(device), y.to(device)
+
+def train_step(model, optimizer, data):
+    idx, targets = get_batch(data)
     logits = model(idx)
     loss = get_loss(logits, targets)
     optimizer.zero_grad(set_to_none=True)
@@ -42,9 +51,9 @@ def train_step(model, optimizer):
     optimizer.step()
     return loss
 
-def train_loop(model, optimizer, num_iters, print_interval):
+def train_loop(model, optimizer, data, num_iters, print_interval):
     for i in range(num_iters):
-        loss = train_step(model, optimizer)
+        loss = train_step(model, optimizer, data)
         if i % print_interval == 0:
             print(f"Steps = {i}, loss = {loss.item()}")
 
@@ -61,28 +70,68 @@ def main():
     else:
         name = argv[1]
 
-    log_file = open("Part1Training.log", "w")
-    sys.stdout = log_file
 
-    # Model and optimizer instantiation
-    config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer = layers)
-    model = m.GPT(config)
-    model = model.to(model.config.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    primes = ["97", "113"]
+    opps = ["add", "sub", "div"]
+    for prime in primes:
+        for opp in opps:
+            dataset = prime + opp + "test.txt"
+            with open(dataset, 'r', encoding = 'utf-8') as file:
+                text = file.read()
+
+            chars = sorted(list(set(text)))
+            vocab_size = len(chars)
+
+            stoi = { ch:i for i,ch in enumerate(chars) }
+            itos = { i:ch for i,ch in enumerate(chars) }
+            encode = lambda s: [stoi[c] for c in s]
+            decode = lambda l: ''.join([itos[i] for i in l])
+
+            data = torch.tensor(encode(text), dtype=torch.long)
+
+            # The random restarts
+            for i in range(3):
+                seed = random.randint(0,1000)
+                torch.manual_seed(seed)
+                lowest_loss = float('inf')
+
+                # gives us training on all of the interested datasets
+                log_file = open("Logs/" + prime + opp + str(i) + "training.log", "w")
+                stdout = sys.stdout
+                sys.stdout = log_file
+
+                print(f"LR = {learning_rate}, batch_size = {batch_size}, block_size = {block_size}\n\n")
+
+                # Model and optimizer instantiation
+                config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer=layers, n_embd=n_embd, n_head=n_head)
+                model = m.GPT(config)
+                model = model.to(model.config.device)
+                optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
+
+                train_loop(model, optimizer, data, 1000, 100)
+                loss = train_step(model, optimizer, data)
+                if loss.item() < lowest_loss:
+                    lowest_loss = loss.item()
+                save_model(model, prime + opp + str(i) +  "model.pt")
+                log_file.close()
+                sys.stdout = stdout
+                print("Done training on ", prime + opp + str(i))
+                
 
     # This training loop is kinda arbitrary and will not converge on complicated txt files
-    loss = train_step(model, optimizer)
-    count = 0
-    while loss > 1e-6:
-        loss = train_step(model, optimizer)
-        if count % 10 == 0:
-            print(f"Steps = {count}, loss = {loss.item()}")
-        count += 1
-    print(f"Final loss: {loss.item()} at step {count}")
-    save_model(model, name)
+    # loss = train_step(model, optimizer)
+    # count = 0
+    # while loss > 1e-6:
+    #     loss = train_step(model, optimizer)
+    #     if count % 10 == 0:
+    #         print(f"Steps = {count}, loss = {loss.item()}")
+    #     count += 1
+    # print(f"Final loss: {loss.item()} at step {count}")
+    # save_model(model, name)
 
-    log_file.close()
-    return
+    # log_file.close()
+    # return
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,14 @@
+LR = 0.001, batch_size = 16, block_size = 64
+
+
+number of parameters: 0.20M
+Steps = 0, loss = 2.599637031555176
+Steps = 100, loss = 1.88112473487854
+Steps = 200, loss = 1.7014902830123901
+Steps = 300, loss = 1.5776984691619873
+Steps = 400, loss = 1.581699252128601
+Steps = 500, loss = 1.5948526859283447
+Steps = 600, loss = 1.549170732498169
+Steps = 700, loss = 1.5650079250335693
+Steps = 800, loss = 1.5507214069366455
+Steps = 900, loss = 1.5272396802902222
