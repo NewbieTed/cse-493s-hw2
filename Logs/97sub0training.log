@@ -1,14 +1,15 @@
-LR = 0.001, batch_size = 16, block_size = 64
+LR = 0.01, batch_size = 32, block_size = 256
 
 
-number of parameters: 0.20M
-Steps = 0, loss = 2.500856637954712
-Steps = 100, loss = 1.3379334211349487
-Steps = 200, loss = 1.0924445390701294
-Steps = 300, loss = 1.0504683256149292
-Steps = 400, loss = 1.0315351486206055
-Steps = 500, loss = 1.045107364654541
-Steps = 600, loss = 1.0225143432617188
-Steps = 700, loss = 1.031373143196106
-Steps = 800, loss = 1.020906925201416
-Steps = 900, loss = 1.0118626356124878
+number of parameters: 0.40M
+Steps = 0, loss = 2.7204174995422363
+Steps = 100, loss = 1.593182921409607
+Steps = 200, loss = 1.5216048955917358
+Steps = 300, loss = 1.385212779045105
+Steps = 400, loss = 1.3748199939727783
+Steps = 500, loss = 1.3921635150909424
+Steps = 600, loss = 1.364693522453308
+Steps = 700, loss = 1.3210335969924927
+Steps = 800, loss = 1.3251721858978271
+Steps = 900, loss = 1.2874847650527954
+Validation accuracy: 0.346875 (got 111 right out of 320)
