@@ -1,42 +1,61 @@
 import random as r
 import sys
+import itertools
+import os
 
-r.seed(1)
+# r.seed(1)
 # max = 1000
 
-train_size = 1000000
-val_size = 200000
-test_size = 200000
+train_prop = 0.7
+val_prop = 0.2
+test_prop = 0.1
 
-name = ["97add", "97sub", "97div", "113add", "113sub", "113div"]
-for j in range(len(name)):
-    for i in range(3):
-        if i == 0:
-            num = train_size
-            file_name = name[j] + "train" + ".txt"
-        elif i == 1:
-            num = val_size
-            file_name = name[j] + "val" + ".txt"
-        else:
-            num = test_size
-            file_name = name[j] + "test" + ".txt"
+names = ["97add", "97sub", "97div", "113add", "113sub", "113div"]
 
-        log_file = open(file_name, "w")
-        for _ in range(num):
-            sys.stdout = log_file
-            a = r.randint(100,999)
-            b = r.randint(100,999)
-            if j > 2:
-                div = 113
+def make_map(num):
+    dic = {}
+    for i in range(num):
+        nums = [j for _ in range(num)]
+        dic[i] = nums
+    return dict 
+
+def math_print(pair, j):
+    a = pair[0]
+    b = pair[1]
+    if j % 3 == 0:
+        c = (a + b) % prime
+        print("", a, "+", b, "=", c)
+    elif j % 3 == 1:
+        c = (a - b) % prime
+        print("", a, "-", b, "=", c)
+    else:
+        if b == 0:
+            b = 1
+        c = (a // b) % prime
+        print("", a, "/", b, "=", c)
+
+for j in range(len(names)):
+        prime = int(names[j][:2])
+        pairs = list(itertools.product(range(prime), repeat=2))
+        r.shuffle(pairs)
+
+
+        os.remove(names[j] + "train" + ".txt")
+        os.remove(names[j] + "val" + ".txt")
+        os.remove(names[j] + "test" + ".txt")
+
+        for idx, pair in enumerate(pairs):
+            if idx < (train_prop * len(pairs)):
+                file_name = names[j] + "train" + ".txt"
+                log_file = open(file_name, "a")
+                sys.stdout = log_file
+
+            elif idx < (train_prop + val_prop) * len(pairs):
+                file_name = names[j] + "val" + ".txt"
+                log_file = open(file_name, "a")
+                sys.stdout = log_file
             else:
-                div = 97
-            if j % 3 == 0:
-                c = (a + b) % div
-                print(a, "+", b, "=", c)
-            elif j % 3 == 1:
-                c = (a - b) % div
-                print(a, "-", b, "=", c)
-            else:
-                c = (a // b) % div 
-                print(a, "/", b, "=", c)
-        log_file.close()
+                file_name = names[j] + "test" + ".txt"
+                log_file = open(file_name, "a")
+                sys.stdout = log_file
+            math_print(pair, j)

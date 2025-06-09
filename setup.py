@@ -8,9 +8,9 @@ torch.manual_seed(1)
 
 # Hyper parameters
 batch_size = 32 # Num of blocks to process in parallel
-block_size = 256 # size of block (number of characters) (aka sequence length)
+block_size = 9 # size of block (number of characters) (aka sequence length)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-learning_rate = 1e-2
+learning_rate = 1e-3
 dataset = 'loveML.txt'
 layers = 2 # default should be 12
 n_embd = 128
