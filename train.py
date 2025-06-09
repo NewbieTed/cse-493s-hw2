@@ -161,6 +161,7 @@ def get_data(file_name):
 
 # Contains our training loop across combinations of operations and primes
 def main():
+    print(torch.cuda.is_available())
     argv = sys.argv
     if len(argv) == 1:
         name = 'model.pt'
@@ -202,7 +203,7 @@ def main():
                 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-                train_loop(model, optimizer, lines, 500000, 100, stoi, encode)
+                train_loop(model, optimizer, lines, 20000, 100, stoi, encode)
                 loss = train_step(model, optimizer, lines, stoi, encode)
                 if loss.item() < lowest_loss:
                     lowest_loss = loss.item()
@@ -211,7 +212,7 @@ def main():
                 dataset = prime + opp + "val.txt"
                 text, lines = get_data(dataset)
                 count = 0
-                iterations = 10
+                iterations = 3
                 for _ in range(iterations):
                     count += test_on_batch(model, lines, stoi, encode)
                 print(f"Validation accuracy: {count/(batch_size * iterations)} (got {count} right out of {batch_size * iterations})")
@@ -221,8 +222,8 @@ def main():
 
                 sys.stdout = stdout
                 print("Done training on ", prime + opp + str(i))
-                done = True
-                break
+                # done = True
+                # break
 
 if __name__ == '__main__':
     main()
