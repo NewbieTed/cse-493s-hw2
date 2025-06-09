@@ -19,7 +19,7 @@ def make_map(num):
         dic[i] = nums
     return dict 
 
-def math_print(pair, j):
+def math_print(pair, j, prime):
     a = pair[0]
     b = pair[1]
     if j % 3 == 0:
@@ -30,8 +30,10 @@ def math_print(pair, j):
         print("", a, "-", b, "=", c)
     else:
         if b == 0:
-            b = 1
-        c = (a // b) % prime
+            return
+            # b = 1
+        invb = pow(b, -1, mod=prime)
+        c = (a * invb) % prime
         print("", a, "/", b, "=", c)
 
 for j in range(len(names)):
@@ -40,9 +42,12 @@ for j in range(len(names)):
         r.shuffle(pairs)
 
 
-        os.remove(names[j] + "train" + ".txt")
-        os.remove(names[j] + "val" + ".txt")
-        os.remove(names[j] + "test" + ".txt")
+        try:
+            os.remove(names[j] + "train" + ".txt")
+            os.remove(names[j] + "val" + ".txt")
+            os.remove(names[j] + "test" + ".txt")
+        except:
+            pass
 
         for idx, pair in enumerate(pairs):
             if idx < (train_prop * len(pairs)):
@@ -58,4 +63,4 @@ for j in range(len(names)):
                 file_name = names[j] + "test" + ".txt"
                 log_file = open(file_name, "a")
                 sys.stdout = log_file
-            math_print(pair, j)
+            math_print(pair, j, prime)
