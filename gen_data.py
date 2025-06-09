@@ -37,30 +37,34 @@ def math_print(pair, j, prime):
         print("", a, "/", b, "=", c)
 
 for j in range(len(names)):
-        prime = int(names[j][:2])
-        pairs = list(itertools.product(range(prime), repeat=2))
-        r.shuffle(pairs)
+    if j < 3:
+        prime = 97
+    else:
+        prime = 113
+    # prime = int(names[j][:2])
+    pairs = list(itertools.product(range(prime), repeat=2))
+    r.shuffle(pairs)
 
 
-        try:
-            os.remove(names[j] + "train" + ".txt")
-            os.remove(names[j] + "val" + ".txt")
-            os.remove(names[j] + "test" + ".txt")
-        except:
-            pass
+    try:
+        os.remove(names[j] + "train" + ".txt")
+        os.remove(names[j] + "val" + ".txt")
+        os.remove(names[j] + "test" + ".txt")
+    except:
+        pass
 
-        for idx, pair in enumerate(pairs):
-            if idx < (train_prop * len(pairs)):
-                file_name = names[j] + "train" + ".txt"
-                log_file = open(file_name, "a")
-                sys.stdout = log_file
+    for idx, pair in enumerate(pairs):
+        if idx < (train_prop * len(pairs)):
+            file_name = names[j] + "train" + ".txt"
+            log_file = open(file_name, "a")
+            sys.stdout = log_file
 
-            elif idx < (train_prop + val_prop) * len(pairs):
-                file_name = names[j] + "val" + ".txt"
-                log_file = open(file_name, "a")
-                sys.stdout = log_file
-            else:
-                file_name = names[j] + "test" + ".txt"
-                log_file = open(file_name, "a")
-                sys.stdout = log_file
-            math_print(pair, j, prime)
+        elif idx < (train_prop + val_prop) * len(pairs):
+            file_name = names[j] + "val" + ".txt"
+            log_file = open(file_name, "a")
+            sys.stdout = log_file
+        else:
+            file_name = names[j] + "test" + ".txt"
+            log_file = open(file_name, "a")
+            sys.stdout = log_file
+        math_print(pair, j, prime)
