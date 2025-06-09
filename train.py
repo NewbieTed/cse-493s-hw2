@@ -26,17 +26,20 @@ n_head = s.n_head
 
 diag = False
 
+# Gets the loss on some targets
 def get_loss(logits, targets):
     B, T, C = logits.shape
     assert B == batch_size and T == block_size
     assert (B, T) == targets.shape
-    logits = logits.view(B*T, C)
-    targets = targets.view(B*T)
-    # logits = logits[:, -1, :]
-    # targets = targets[:, -1]
+    # logits = logits.view(B*T, C)
+    # targets = targets.view(B*T)
+    logits = logits[:, -1, :]
+    targets = targets[:, -1]
     loss = F.cross_entropy(logits, targets)
     return loss
 
+# Return a full batch for our data
+# Consists of blocks of lines with the result c as the target
 def get_batch_multi(lines, stoi, encode):
     x = []
     y = []
@@ -65,75 +68,7 @@ def get_batch_multi(lines, stoi, encode):
 
     return torch.stack(x).to(device), torch.stack(y).to(device)
 
-# def get_batch_multi(lines, stoi, encode):
-#     x = []
-#     y = []
-
-#     i = 0
-#     while i < batch_size:
-#         ctr = 0
-#         context_examples = []
-#         while ctr < block_size:
-#             line = random.choice(lines).strip()
-#             context_examples.append(line + '\n')
-#             ctr += len(encode(line + '\n'))
-
-#         # remove the last 2 examples to leave room for the 'real' example
-#         context_examples = context_examples[:-2]
-
-#         # Finding the line we will do prediction on 
-#         line = random.choice(lines).strip()
-#         context_part, result_part = line.split('=')
-#         context = context_part.strip() + ' = '
-#         result = result_part.strip()
-#         full_string = context + result + '\n'
-#         if diag:
-#             print(f"context_part: {context_part}, result_part: {result_part}")
-
-#         full_tokens = encode(full_string)
-#         context_tokens = encode(context)
-
-#         result_start = len(context_tokens)
-#         result_end = len(full_tokens)
-
-#         cut_pos = result_start # result_end -1
-#         if diag:
-#             print(full_string)
-#             print(full_tokens)
-#             print(f"Result start: {result_start}, result_end - 1: {result_end - 1}")
-#             print(f"Result start token: {full_tokens[result_start]}, result_end - 1 token: {full_tokens[result_end -1]}")
-#             print(f"Cut_pos: {cut_pos}")
-
-#         x_tokens = full_tokens[:cut_pos]
-#         final_token = full_tokens[cut_pos]
-
-#         if diag:
-#             print(f"x_tokens: {x_tokens}, final_token: {final_token}")
-
-#         ex_str = ''.join(context_examples)
-#         ex_tokens = encode(ex_str)
-
-#         full_tokens_with_context = ex_tokens + x_tokens
-#         if (len(full_tokens_with_context) < block_size):
-#             pad_len = block_size - len(full_tokens_with_context)
-#         else:
-#             pad_len = 0
-#             print("Something peculiar happened")
-#             # continue
-#         x_enc = [stoi[' ']] * pad_len + full_tokens_with_context
-#         y_enc = x_enc[1:] + [final_token]
-
-#         if diag:
-#             print(f"x_enc: {x_enc}, y_enc = {y_enc}")
-
-#         x.append(torch.tensor(x_enc, dtype=torch.long))
-#         y.append(torch.tensor(y_enc, dtype=torch.long))
-
-#         i += 1
-
-    # return torch.stack(x).to(device), torch.stack(y).to(device)
-            
-
+# Do a training step
 def train_step(model, optimizer, lines, stoi, encode):
     idx, targets = get_batch_multi(lines, stoi, encode)
     logits = model(idx)
@@ -148,6 +83,7 @@ import re
 def split_str(s):
     return re.findall(r'\d+|\D', s)
 
+# Returns our vocabulary and necessary information for encoding/decoding
 def build_vocab_and_tokenizer(text, max_num):
     # Get all unique tokens (numbers and single characters) from training data
     all_tokens = []
@@ -204,6 +140,7 @@ def save_model(model, name):
         'config' : model.config
     }, name)
 
+# Return the number of correct predictions on a batch
 def test_on_batch(model, lines, stoi, encode):
     x, y = get_batch_multi(lines, stoi, encode)
     assert(len(x[0]) == block_size)
@@ -222,6 +159,7 @@ def get_data(file_name):
         lines = f.readlines()
     return text, lines
 
+# Contains our training loop across combinations of operations and primes
 def main():
     argv = sys.argv
     if len(argv) == 1:
@@ -244,12 +182,6 @@ def main():
 
             vocab_size, stoi, itos, encode, decode, non_digit_tokens = build_vocab_and_tokenizer(text, int(prime))
 
-            # x, y = get_batch_multi(lines, stoi, encode)
-            # print(decode(x[0].tolist()))
-            # print(decode([y[0][-1].item()]))
-            # done = True
-            # break
-
             # The random restarts
             for i in range(0,1):
                 seed = random.randint(0,1000)
@@ -270,7 +202,7 @@ def main():
                 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-                train_loop(model, optimizer, lines, 5000, 100, stoi, encode)
+                train_loop(model, optimizer, lines, 500000, 100, stoi, encode)
                 loss = train_step(model, optimizer, lines, stoi, encode)
                 if loss.item() < lowest_loss:
                     lowest_loss = loss.item()

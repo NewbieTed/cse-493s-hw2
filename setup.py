@@ -7,7 +7,7 @@ import model as m
 torch.manual_seed(1)
 
 # Hyper parameters
-batch_size = 32 # Num of blocks to process in parallel
+batch_size = 512 # Num of blocks to process in parallel
 block_size = 9 # size of block (number of characters) (aka sequence length)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 learning_rate = 1e-3
