@@ -247,7 +247,10 @@ def main():
     accuracy = count / (batch_size * iterations)
     print(f"Test accuracy: {count/(batch_size * iterations)} (got {count} right out of {batch_size * iterations})")
 
-    print(f"The time it took to go from (almost) zero (1e-4) training loss to almost zero test loss was {shortest_time} iterations")
+    if shortest_time == -1000:
+        print("The testing loss never went to almost zero")
+    else:
+        print(f"The time it took to go from (almost) zero (1e-4) training loss to almost zero test loss was {shortest_time} iterations")
 
     log_file.close()
 
