@@ -223,7 +223,7 @@ def main():
     loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode, prime, opp)
     loss = train_step(model, optimizer, lines, stoi, encode)
 
-    dataset = prime + opp + "test.txt"
+    dataset = "data/" + prime + opp + "test.txt"
     text, lines = get_data(dataset)
     count = 0
     iterations = 1
@@ -263,7 +263,7 @@ def main():
     plt.title("Accuracy Over Time")
     plt.grid(True)
     plt.legend()
-    plt.savefig("Plots/" + model_name + "_accuracy_over_time_plot.png")
+    plt.savefig("plots/" + model_name + "_accuracy_over_time_plot.png")
     plt.show()
 
 
