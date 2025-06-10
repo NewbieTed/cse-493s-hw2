@@ -139,7 +139,7 @@ def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode,
             print(f"Steps = {i}, loss = {loss.item()}")
             loss_list.append((i, loss.item()))
 
-            val_dataset = "data/" + prime + opp + "val.txt"
+            val_dataset = prime + opp + "val.txt"
             text, newlines = get_data(val_dataset)
             count = test_on_batch(model, newlines, stoi, encode)
             val_acc_list.append((i, count / batch_size))
@@ -168,6 +168,7 @@ def test_on_batch(model, lines, stoi, encode):
     return (idx_next == y_pred).sum().item()
 
 def get_data(file_name):
+    file_name = "data/" + file_name
     with open(file_name, 'r', encoding = 'utf-8') as f:
         text = f.read()
         f.seek(0)
@@ -228,7 +229,7 @@ def main():
                     loss = train_step(model, optimizer, lines, stoi, encode)
                     if loss.item() < lowest_loss:
                         lowest_loss = loss.item()
-                    save_model(model, model_name +  "model.pt")
+                    save_model(model, "models/" +  model_name +  "model.pt")
 
                     dataset = prime + opp + "test.txt"
                     text, lines = get_data(dataset)
@@ -255,7 +256,7 @@ def main():
                     plt.ylabel("Loss")
                     plt.title("Loss Over Time")
                     plt.grid(True)
-                    plt.savefig(model_name + "loss_plot.png")
+                    plt.savefig("plots/" + model_name + "loss_plot.png")
                     plt.show()
 
                     # Bar plot for final validation accuracy
@@ -264,7 +265,7 @@ def main():
                     plt.ylim(0, 1)
                     plt.title("Final Test Accuracy")
                     plt.ylabel("Accuracy")
-                    plt.savefig(model_name + "test_acc.png")
+                    plt.savefig("plots/" + model_name + "test_acc.png")
                     plt.show()
                     # done = True
                     # break
