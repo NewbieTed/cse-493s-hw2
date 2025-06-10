@@ -30,7 +30,6 @@ diag = False
 # Gets the loss on some targets
 def get_loss(logits, targets):
     B, T, C = logits.shape
-    assert B == batch_size and T == block_size
     assert (B, T) == targets.shape
     # logits = logits.view(B*T, C)
     # targets = targets.view(B*T)
@@ -41,7 +40,7 @@ def get_loss(logits, targets):
 
 # Return a full batch for our data
 # Consists of blocks of lines with the result c as the target
-def get_batch_multi(lines, stoi, encode):
+def get_batch_multi(lines, stoi, encode, batch_size):
     x = []
     y = []
     for _ in range(batch_size):
@@ -70,8 +69,8 @@ def get_batch_multi(lines, stoi, encode):
     return torch.stack(x).to(device), torch.stack(y).to(device)
 
 # Do a training step
-def train_step(model, optimizer, lines, stoi, encode):
-    idx, targets = get_batch_multi(lines, stoi, encode)
+def train_step(model, optimizer, lines, stoi, encode, batch_size):
+    idx, targets = get_batch_multi(lines, stoi, encode, batch_size)
     logits = model(idx)
     loss = get_loss(logits, targets)
     optimizer.zero_grad(set_to_none=True)
@@ -129,36 +128,38 @@ def build_vocab_and_tokenizer(text, max_num):
     
     return vocab_size, stoi, itos, encode, decode, non_digit_tokens
 
-def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode, prime, opp):
+def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode, prime, opp, batch_size):
     loss_list = []
     train_acc_list = []
     val_acc_list = []
-    shortest_time = -1000
+    shortest_time = -100
     count = 0
     for i in range(num_iters):
-        loss = train_step(model, optimizer, lines, stoi, encode)
+        loss = train_step(model, optimizer, lines, stoi, encode, batch_size)
+        test_dataset = "data/" + prime + opp + "test.txt"
+        text, newlines = get_data(test_dataset)
+        idx, targets = get_batch_multi(newlines, stoi, encode, batch_size)
+        logits = model(idx)
+        test_loss = get_loss(logits, targets)
         if i % print_interval == 0:
-            print(f"Steps = {i}, loss = {loss.item()}")
+            print(f"Steps = {i}, train loss = {loss.item()}")
+            print(f"Steps = {i}, test loss = {test_loss.item()}")
             loss_list.append((i, loss.item()))
 
             val_dataset = "data/" + prime + opp + "val.txt"
             text, newlines = get_data(val_dataset)
-            count = test_on_batch(model, newlines, stoi, encode)
+            count = test_on_batch(model, newlines, stoi, encode, batch_size)
             val_acc_list.append((i, count / batch_size))
 
-            count = test_on_batch(model, lines, stoi, encode)
+            count = test_on_batch(model, lines, stoi, encode, batch_size)
             train_acc_list.append((i, count / batch_size))
-        test_dataset = "data/" + prime + opp + "test.txt"
-        text, newlines = get_data(test_dataset)
-        idx, targets = get_batch_multi(newlines, stoi, encode)
-        logits = model(idx)
-        test_loss = get_loss(logits, targets)
         if loss >= 1e-4:
             count = 0
         else:
             count += 1
-            if shortest_time == -1000 and test_loss < 1e-4:
+            if shortest_time == -100 and test_loss < 1e-4:
                 shortest_time = count
+                # return shortest_time, loss_list, val_acc_list, train_acc_list
             
         
             
@@ -171,8 +172,8 @@ def save_model(model, name):
     }, name)
 
 # Return the number of correct predictions on a batch
-def test_on_batch(model, lines, stoi, encode):
-    x, y = get_batch_multi(lines, stoi, encode)
+def test_on_batch(model, lines, stoi, encode, batch_size):
+    x, y = get_batch_multi(lines, stoi, encode, batch_size)
     assert(len(x[0]) == block_size)
     logits = model(x)
     logits = logits[:, -1, :]
@@ -207,73 +208,97 @@ def main():
     opps = ["add", "sub", "div"]
     done = False
 
-    prime = "97"
-    layer = 2
-    opp = "div"
-    dataset = "data/" + prime + opp + "train.txt"
+    batch_sizes = [8, 16, 32, 64, 128, 256, 512, 1024]
 
-    text,lines = get_data(dataset)
+    counts = []
+    for batch_size in batch_sizes:
 
-    vocab_size, stoi, itos, encode, decode, non_digit_tokens = build_vocab_and_tokenizer(text, int(prime))
+        prime = "97"
+        layer = 2
+        opp = "div"
+        dataset = "data/" + prime + opp + "train.txt"
 
-    # The random restarts
-    seed = random.randint(0,1000)
-    torch.manual_seed(seed)
+        text,lines = get_data(dataset)
 
-    # gives us training on all of the interested datasets
-    model_name = prime + opp + "layer" + str(layer)
-    log_file = open("Logs/" + model_name + "training.log", "w")
-    stdout = sys.stdout
-    sys.stdout = log_file
+        vocab_size, stoi, itos, encode, decode, non_digit_tokens = build_vocab_and_tokenizer(text, int(prime))
 
-    print(f"LR = {learning_rate}, batch_size = {batch_size}, block_size = {block_size}\n\n")
+        # The random restarts
+        seed = random.randint(0,1000)
+        torch.manual_seed(seed)
 
-    # Model and optimizer instantiation
-    config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer=layer, n_embd=n_embd, n_head=n_head)
-    model = m.GPT(config)
-    model = model.to(model.config.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+        # gives us training on all of the interested datasets
+        model_name = prime + opp + "layer" + str(layer) + str(batch_size)
+        log_file = open("Logs/" + model_name + "training.log", "w")
+        stdout = sys.stdout
+        sys.stdout = log_file
 
+        print(f"LR = {learning_rate}, batch_size = {batch_size}, block_size = {block_size}\n\n")
 
-    shortest_time, loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode, prime, opp)
-    loss = train_step(model, optimizer, lines, stoi, encode)
-
-    dataset = "data/" + prime + opp + "test.txt"
-    text, lines = get_data(dataset)
-    count = 0
-    iterations = 1
-    for _ in range(iterations):
-        count += test_on_batch(model, lines, stoi, encode)
-    accuracy = count / (batch_size * iterations)
-    print(f"Test accuracy: {count/(batch_size * iterations)} (got {count} right out of {batch_size * iterations})")
-
-    if shortest_time == -1000:
-        print("The testing loss never went to almost zero")
-    else:
-        print(f"The time it took to go from (almost) zero (1e-4) training loss to almost zero test loss was {shortest_time} iterations")
-
-    log_file.close()
+        # Model and optimizer instantiation
+        config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer=layer, n_embd=n_embd, n_head=n_head)
+        model = m.GPT(config)
+        model = model.to(model.config.device)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-    sys.stdout = stdout
-    print("Done training on ", prime + opp)
+        shortest_time, loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode, prime, opp, batch_size)
+        loss = train_step(model, optimizer, lines, stoi, encode, batch_size)
 
-    train_steps, train_accuracies = zip(*train_acc_list)
-    val_steps, val_accuracies = zip(*val_acc_list)
+        dataset = "data/" + prime + opp + "test.txt"
+        text, lines = get_data(dataset)
+        count = 0
+        iterations = 1
+        for _ in range(iterations):
+            count += test_on_batch(model, lines, stoi, encode, batch_size)
+        accuracy = count / (batch_size * iterations)
+        print(f"Test accuracy: {count/(batch_size * iterations)} (got {count} right out of {batch_size * iterations})")
 
-    # Plotting
-    plt.figure(figsize=(10, 5))
-    plt.plot(train_steps, train_accuracies, marker='o', linestyle='-', label='Train Accuracy')
-    plt.plot(val_steps, val_accuracies, marker='s', linestyle='-', label='Validation Accuracy')
-    plt.xlabel("Training Steps")
-    plt.ylabel("Accuracy")
-    plt.title("Accuracy Over Time")
-    plt.grid(True)
-    plt.legend()
-    plt.savefig("plots/" + model_name + "_accuracy_over_time_plot.png")
+        if shortest_time == -100:
+            print("The testing loss never went to almost zero")
+        else:
+            print(f"The time it took to go from (almost) zero (1e-4) training loss to almost zero test loss was {shortest_time} iterations")
+
+        counts.append(shortest_time)
+
+        log_file.close()
+
+
+        sys.stdout = stdout
+        print("Done training on ", prime + opp)
+
+        train_steps, train_accuracies = zip(*train_acc_list)
+        val_steps, val_accuracies = zip(*val_acc_list)
+
+        # Plotting
+        plt.figure(figsize=(10, 5))
+        plt.plot(train_steps, train_accuracies, marker='o', linestyle='-', label='Train Accuracy')
+        plt.plot(val_steps, val_accuracies, marker='s', linestyle='-', label='Validation Accuracy')
+        plt.xlabel("Training Steps")
+        plt.ylabel("Accuracy")
+        plt.title("Accuracy Over Time")
+        plt.grid(True)
+        plt.legend()
+        plt.savefig("plots/" + model_name + "_accuracy_over_time_plot.png")
+        plt.show()
+
+        save_model(model, "models/" + model_name + "grokking_test.pt")
+
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(batch_sizes, counts)
+
+    plt.xlabel('Batch Sizes')
+    plt.ylabel('Steps for Test Loss to go to almost zero after train loss')
+    plt.title('Steps vs Batch Sizes')
+
+    plt.grid(True, alpha=0.3)
+
+    for i, v in enumerate(counts):
+        plt.text(batch_sizes[i], v + 0.5, str(v), ha='center', va='bottom')
+
+    plt.savefig('batch_sizes_vs_counts.png', dpi=300, bbox_inches='tight')
     plt.show()
 
-    save_model(model, "models/grokking_test.pt")
 
 if __name__ == '__main__':
     main()
