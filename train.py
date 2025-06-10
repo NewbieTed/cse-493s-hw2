@@ -139,7 +139,7 @@ def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode,
             print(f"Steps = {i}, loss = {loss.item()}")
             loss_list.append((i, loss.item()))
 
-            val_dataset = "Data/" + prime + opp + "val.txt"
+            val_dataset = "data/" + prime + opp + "val.txt"
             text, newlines = get_data(val_dataset)
             count = test_on_batch(model, newlines, stoi, encode)
             val_acc_list.append((i, count / batch_size))
@@ -195,7 +195,7 @@ def main():
     prime = "97"
     layer = 2
     opp = "div"
-    dataset = "Data/" + prime + opp + "train.txt"
+    dataset = "data/" + prime + opp + "train.txt"
 
     text,lines = get_data(dataset)
 
