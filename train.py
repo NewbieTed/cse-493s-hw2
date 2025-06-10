@@ -129,14 +129,25 @@ def build_vocab_and_tokenizer(text, max_num):
     
     return vocab_size, stoi, itos, encode, decode, non_digit_tokens
 
-def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode):
+def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode, prime, opp):
     loss_list = []
+    train_acc_list = []
+    val_acc_list = []
     for i in range(num_iters):
         loss = train_step(model, optimizer, lines, stoi, encode)
         if i % print_interval == 0:
             print(f"Steps = {i}, loss = {loss.item()}")
             loss_list.append((i, loss.item()))
-    return loss_list
+
+            val_dataset = "data/" + prime + opp + "val.txt"
+            text, newlines = get_data(val_dataset)
+            count = test_on_batch(model, newlines, stoi, encode)
+            val_acc_list.append((i, count / batch_size))
+
+            count = test_on_batch(model, lines, stoi, encode)
+            train_acc_list.append((i, count / batch_size))
+            
+    return loss_list, val_acc_list, train_acc_list
 
 def save_model(model, name):
     torch.save({
@@ -213,7 +224,7 @@ def main():
                     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-                    loss_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode)
+                    loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode, prime, opp)
                     loss = train_step(model, optimizer, lines, stoi, encode)
                     if loss.item() < lowest_loss:
                         lowest_loss = loss.item()
@@ -257,6 +268,22 @@ def main():
                     plt.show()
                     # done = True
                     # break
+
+                    # accuracy lines plots
+                    train_steps, train_accuracies = zip(*train_acc_list)
+                    val_steps, val_accuracies = zip(*val_acc_list)
+
+                    # Plotting
+                    plt.figure(figsize=(10, 5))
+                    plt.plot(train_steps, train_accuracies, marker='o', linestyle='-', label='Train Accuracy')
+                    plt.plot(val_steps, val_accuracies, marker='s', linestyle='-', label='Validation Accuracy')
+                    plt.xlabel("Training Steps")
+                    plt.ylabel("Accuracy")
+                    plt.title("Accuracy Over Time")
+                    plt.grid(True)
+                    plt.legend()
+                    plt.savefig("plots/" + model_name + "_accuracy_over_time_plot.png")
+                    plt.show()
 
 if __name__ == '__main__':
     main()
