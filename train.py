@@ -133,6 +133,8 @@ def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode,
     loss_list = []
     train_acc_list = []
     val_acc_list = []
+    shortest_time = -1000
+    count = 0
     for i in range(num_iters):
         loss = train_step(model, optimizer, lines, stoi, encode)
         if i % print_interval == 0:
@@ -146,8 +148,21 @@ def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode,
 
             count = test_on_batch(model, lines, stoi, encode)
             train_acc_list.append((i, count / batch_size))
+        test_dataset = "data/" + prime + opp + "test.txt"
+        text, newlines = get_data(test_dataset)
+        idx, targets = get_batch_multi(newlines, stoi, encode)
+        logits = model(idx)
+        test_loss = get_loss(logits, targets)
+        if loss >= 1e-4:
+            count = 0
+        else:
+            count += 1
+            if shortest_time == -1000 and test_loss < 1e-4:
+                shortest_time = count
             
-    return loss_list, val_acc_list, train_acc_list
+        
+            
+    return shortest_time, loss_list, val_acc_list, train_acc_list
 
 def save_model(model, name):
     torch.save({
@@ -220,7 +235,7 @@ def main():
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-    loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode, prime, opp)
+    shortest_time, loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode, prime, opp)
     loss = train_step(model, optimizer, lines, stoi, encode)
 
     dataset = "data/" + prime + opp + "test.txt"
@@ -232,24 +247,13 @@ def main():
     accuracy = count / (batch_size * iterations)
     print(f"Test accuracy: {count/(batch_size * iterations)} (got {count} right out of {batch_size * iterations})")
 
+    print(f"The time it took to go from (almost) zero (1e-4) training loss to almost zero test loss was {shortest_time} iterations")
+
     log_file.close()
 
 
     sys.stdout = stdout
     print("Done training on ", prime + opp)
-
-    # Unpack loss values
-    # steps, losses = zip(*loss_list)
-
-    # # Line plot for loss
-    # plt.figure(figsize=(10, 5))
-    # plt.plot(steps, losses, marker='o', linestyle='-')
-    # plt.xlabel("Training Steps")
-    # plt.ylabel("Loss")
-    # plt.title("Loss Over Time")
-    # plt.grid(True)
-    # plt.savefig("Plots/" + model_name + "accuracy_over_time_plot.png")
-    # plt.show()
 
     train_steps, train_accuracies = zip(*train_acc_list)
     val_steps, val_accuracies = zip(*val_acc_list)
@@ -267,16 +271,6 @@ def main():
     plt.show()
 
     save_model(model, "models/grokking_test.pt")
-
-
-    # Bar plot for final validation accuracy
-    # plt.figure(figsize=(5, 5))
-    # plt.bar(["Test Accuracy"], [accuracy], color="skyblue")
-    # plt.ylim(0, 1)
-    # plt.title("Final Test Accuracy")
-    # plt.ylabel("Accuracy")
-    # plt.savefig(model_name + "test_acc.png")
-    # plt.show()
 
 if __name__ == '__main__':
     main()

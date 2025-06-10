@@ -47,24 +47,24 @@ for j in range(len(names)):
 
 
     try:
-        os.remove(names[j] + "train" + ".txt")
-        os.remove(names[j] + "val" + ".txt")
-        os.remove(names[j] + "test" + ".txt")
+        os.remove("data/" + names[j] + "train" + ".txt")
+        os.remove("data/" + names[j] + "val" + ".txt")
+        os.remove("data/" + names[j] + "test" + ".txt")
     except:
         pass
 
     for idx, pair in enumerate(pairs):
         if idx < (train_prop * len(pairs)):
-            file_name = names[j] + "train" + ".txt"
+            file_name = "data/" + names[j] + "train" + ".txt"
             log_file = open(file_name, "a")
             sys.stdout = log_file
 
         elif idx < (train_prop + val_prop) * len(pairs):
-            file_name = names[j] + "val" + ".txt"
+            file_name = "data/" + names[j] + "val" + ".txt"
             log_file = open(file_name, "a")
             sys.stdout = log_file
         else:
-            file_name = names[j] + "test" + ".txt"
+            file_name = "data/" + names[j] + "test" + ".txt"
             log_file = open(file_name, "a")
             sys.stdout = log_file
         math_print(pair, j, prime)
