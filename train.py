@@ -10,6 +10,7 @@ import model as m
 import random
 
 import setup as s
+import matplotlib.pyplot as plt
 
 torch.manual_seed(1)
 
@@ -129,10 +130,13 @@ def build_vocab_and_tokenizer(text, max_num):
     return vocab_size, stoi, itos, encode, decode, non_digit_tokens
 
 def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode):
+    loss_list = []
     for i in range(num_iters):
         loss = train_step(model, optimizer, lines, stoi, encode)
         if i % print_interval == 0:
             print(f"Steps = {i}, loss = {loss.item()}")
+            loss_list.append((i, loss.item()))
+    return loss_list
 
 def save_model(model, name):
     torch.save({
@@ -162,6 +166,10 @@ def get_data(file_name):
 # Contains our training loop across combinations of operations and primes
 def main():
     print(torch.cuda.is_available())
+    if not torch.cuda.is_available():
+        print(torch.cuda.is_available())
+        return
+
     argv = sys.argv
     if len(argv) == 1:
         name = 'model.pt'
@@ -172,58 +180,83 @@ def main():
     primes = ["97", "113"]
     opps = ["add", "sub", "div"]
     done = False
-    for prime in primes:
-        if done:
-            break
-        for opp in opps:
+    for layer in [1,2]:
+        for prime in primes:
             if done:
                 break
-            dataset = prime + opp + "train.txt"
-            text,lines = get_data(dataset)
+            for opp in opps[:2]:
+                if done:
+                    break
+                dataset = prime + opp + "train.txt"
+                text,lines = get_data(dataset)
 
-            vocab_size, stoi, itos, encode, decode, non_digit_tokens = build_vocab_and_tokenizer(text, int(prime))
+                vocab_size, stoi, itos, encode, decode, non_digit_tokens = build_vocab_and_tokenizer(text, int(prime))
 
-            # The random restarts
-            for i in range(0,1):
-                seed = random.randint(0,1000)
-                torch.manual_seed(seed)
-                lowest_loss = float('inf')
+                # The random restarts
+                for i in range(0,3):
+                    seed = random.randint(0,1000)
+                    torch.manual_seed(seed)
+                    lowest_loss = float('inf')
 
-                # gives us training on all of the interested datasets
-                log_file = open("Logs/" + prime + opp + str(i) + "training.log", "w")
-                stdout = sys.stdout
-                sys.stdout = log_file
+                    # gives us training on all of the interested datasets
+                    model_name = prime + opp + str(i) + "layer" + str(layer)
+                    log_file = open("Logs/" + model_name + "training.log", "w")
+                    stdout = sys.stdout
+                    sys.stdout = log_file
 
-                print(f"LR = {learning_rate}, batch_size = {batch_size}, block_size = {block_size}\n\n")
+                    print(f"LR = {learning_rate}, batch_size = {batch_size}, block_size = {block_size}\n\n")
 
-                # Model and optimizer instantiation
-                config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer=layers, n_embd=n_embd, n_head=n_head)
-                model = m.GPT(config)
-                model = model.to(model.config.device)
-                optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-
-
-                train_loop(model, optimizer, lines, 20000, 100, stoi, encode)
-                loss = train_step(model, optimizer, lines, stoi, encode)
-                if loss.item() < lowest_loss:
-                    lowest_loss = loss.item()
-                save_model(model, prime + opp + str(i) +  "model.pt")
-
-                dataset = prime + opp + "val.txt"
-                text, lines = get_data(dataset)
-                count = 0
-                iterations = 3
-                for _ in range(iterations):
-                    count += test_on_batch(model, lines, stoi, encode)
-                print(f"Validation accuracy: {count/(batch_size * iterations)} (got {count} right out of {batch_size * iterations})")
-
-                log_file.close()
+                    # Model and optimizer instantiation
+                    config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer=layer, n_embd=n_embd, n_head=n_head)
+                    model = m.GPT(config)
+                    model = model.to(model.config.device)
+                    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-                sys.stdout = stdout
-                print("Done training on ", prime + opp + str(i))
-                # done = True
-                # break
+                    loss_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode)
+                    loss = train_step(model, optimizer, lines, stoi, encode)
+                    if loss.item() < lowest_loss:
+                        lowest_loss = loss.item()
+                    save_model(model, model_name +  "model.pt")
+
+                    dataset = prime + opp + "test.txt"
+                    text, lines = get_data(dataset)
+                    count = 0
+                    iterations = 3
+                    for _ in range(iterations):
+                        count += test_on_batch(model, lines, stoi, encode)
+                    accuracy = count / (batch_size * iterations)
+                    print(f"Test accuracy: {count/(batch_size * iterations)} (got {count} right out of {batch_size * iterations})")
+
+                    log_file.close()
+
+
+                    sys.stdout = stdout
+                    print("Done training on ", prime + opp + str(i))
+
+                    # Unpack loss values
+                    steps, losses = zip(*loss_list)
+
+                    # Line plot for loss
+                    plt.figure(figsize=(10, 5))
+                    plt.plot(steps, losses, marker='o', linestyle='-')
+                    plt.xlabel("Training Steps")
+                    plt.ylabel("Loss")
+                    plt.title("Loss Over Time")
+                    plt.grid(True)
+                    plt.savefig(model_name + "loss_plot.png")
+                    plt.show()
+
+                    # Bar plot for final validation accuracy
+                    plt.figure(figsize=(5, 5))
+                    plt.bar(["Test Accuracy"], [accuracy], color="skyblue")
+                    plt.ylim(0, 1)
+                    plt.title("Final Test Accuracy")
+                    plt.ylabel("Accuracy")
+                    plt.savefig(model_name + "test_acc.png")
+                    plt.show()
+                    # done = True
+                    # break
 
 if __name__ == '__main__':
     main()
