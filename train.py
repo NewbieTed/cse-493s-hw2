@@ -220,7 +220,7 @@ def main():
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-    loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode, prime, opp)
+    loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 100000, 100, stoi, encode, prime, opp)
     loss = train_step(model, optimizer, lines, stoi, encode)
 
     dataset = "data/" + prime + opp + "test.txt"
