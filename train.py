@@ -129,14 +129,25 @@ def build_vocab_and_tokenizer(text, max_num):
     
     return vocab_size, stoi, itos, encode, decode, non_digit_tokens
 
-def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode):
+def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode, prime, opp):
     loss_list = []
+    train_acc_list = []
+    val_acc_list = []
     for i in range(num_iters):
         loss = train_step(model, optimizer, lines, stoi, encode)
         if i % print_interval == 0:
             print(f"Steps = {i}, loss = {loss.item()}")
             loss_list.append((i, loss.item()))
-    return loss_list
+
+            val_dataset = "Data/" + prime + opp + "val.txt"
+            text, newlines = get_data(val_dataset)
+            count = test_on_batch(model, newlines, stoi, encode)
+            val_acc_list.append((i, count / batch_size))
+
+            count = test_on_batch(model, lines, stoi, encode)
+            train_acc_list.append((i, count / batch_size))
+            
+    return loss_list, val_acc_list, train_acc_list
 
 def save_model(model, name):
     torch.save({
@@ -180,83 +191,90 @@ def main():
     primes = ["97", "113"]
     opps = ["add", "sub", "div"]
     done = False
-    for layer in [1,2]:
-        for prime in primes:
-            if done:
-                break
-            for opp in opps[:2]:
-                if done:
-                    break
-                dataset = prime + opp + "train.txt"
-                text,lines = get_data(dataset)
 
-                vocab_size, stoi, itos, encode, decode, non_digit_tokens = build_vocab_and_tokenizer(text, int(prime))
+    prime = "97"
+    layer = 2
+    opp = "div"
+    dataset = "Data/" + prime + opp + "train.txt"
 
-                # The random restarts
-                for i in range(0,3):
-                    seed = random.randint(0,1000)
-                    torch.manual_seed(seed)
-                    lowest_loss = float('inf')
+    text,lines = get_data(dataset)
 
-                    # gives us training on all of the interested datasets
-                    model_name = prime + opp + str(i) + "layer" + str(layer)
-                    log_file = open("Logs/" + model_name + "training.log", "w")
-                    stdout = sys.stdout
-                    sys.stdout = log_file
+    vocab_size, stoi, itos, encode, decode, non_digit_tokens = build_vocab_and_tokenizer(text, int(prime))
 
-                    print(f"LR = {learning_rate}, batch_size = {batch_size}, block_size = {block_size}\n\n")
+    # The random restarts
+    seed = random.randint(0,1000)
+    torch.manual_seed(seed)
 
-                    # Model and optimizer instantiation
-                    config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer=layer, n_embd=n_embd, n_head=n_head)
-                    model = m.GPT(config)
-                    model = model.to(model.config.device)
-                    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    # gives us training on all of the interested datasets
+    model_name = prime + opp + "layer" + str(layer)
+    log_file = open("Logs/" + model_name + "training.log", "w")
+    stdout = sys.stdout
+    sys.stdout = log_file
+
+    print(f"LR = {learning_rate}, batch_size = {batch_size}, block_size = {block_size}\n\n")
+
+    # Model and optimizer instantiation
+    config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer=layer, n_embd=n_embd, n_head=n_head)
+    model = m.GPT(config)
+    model = model.to(model.config.device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-                    loss_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode)
-                    loss = train_step(model, optimizer, lines, stoi, encode)
-                    if loss.item() < lowest_loss:
-                        lowest_loss = loss.item()
-                    save_model(model, model_name +  "model.pt")
+    loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode, prime, opp)
+    loss = train_step(model, optimizer, lines, stoi, encode)
 
-                    dataset = prime + opp + "test.txt"
-                    text, lines = get_data(dataset)
-                    count = 0
-                    iterations = 3
-                    for _ in range(iterations):
-                        count += test_on_batch(model, lines, stoi, encode)
-                    accuracy = count / (batch_size * iterations)
-                    print(f"Test accuracy: {count/(batch_size * iterations)} (got {count} right out of {batch_size * iterations})")
+    dataset = prime + opp + "test.txt"
+    text, lines = get_data(dataset)
+    count = 0
+    iterations = 1
+    for _ in range(iterations):
+        count += test_on_batch(model, lines, stoi, encode)
+    accuracy = count / (batch_size * iterations)
+    print(f"Test accuracy: {count/(batch_size * iterations)} (got {count} right out of {batch_size * iterations})")
 
-                    log_file.close()
+    log_file.close()
 
 
-                    sys.stdout = stdout
-                    print("Done training on ", prime + opp + str(i))
+    sys.stdout = stdout
+    print("Done training on ", prime + opp)
 
-                    # Unpack loss values
-                    steps, losses = zip(*loss_list)
+    # Unpack loss values
+    # steps, losses = zip(*loss_list)
 
-                    # Line plot for loss
-                    plt.figure(figsize=(10, 5))
-                    plt.plot(steps, losses, marker='o', linestyle='-')
-                    plt.xlabel("Training Steps")
-                    plt.ylabel("Loss")
-                    plt.title("Loss Over Time")
-                    plt.grid(True)
-                    plt.savefig(model_name + "loss_plot.png")
-                    plt.show()
+    # # Line plot for loss
+    # plt.figure(figsize=(10, 5))
+    # plt.plot(steps, losses, marker='o', linestyle='-')
+    # plt.xlabel("Training Steps")
+    # plt.ylabel("Loss")
+    # plt.title("Loss Over Time")
+    # plt.grid(True)
+    # plt.savefig("Plots/" + model_name + "accuracy_over_time_plot.png")
+    # plt.show()
 
-                    # Bar plot for final validation accuracy
-                    plt.figure(figsize=(5, 5))
-                    plt.bar(["Test Accuracy"], [accuracy], color="skyblue")
-                    plt.ylim(0, 1)
-                    plt.title("Final Test Accuracy")
-                    plt.ylabel("Accuracy")
-                    plt.savefig(model_name + "test_acc.png")
-                    plt.show()
-                    # done = True
-                    # break
+    train_steps, train_accuracies = zip(*train_acc_list)
+    val_steps, val_accuracies = zip(*val_acc_list)
+
+    # Plotting
+    plt.figure(figsize=(10, 5))
+    plt.plot(train_steps, train_accuracies, marker='o', linestyle='-', label='Train Accuracy')
+    plt.plot(val_steps, val_accuracies, marker='s', linestyle='-', label='Validation Accuracy')
+    plt.xlabel("Training Steps")
+    plt.ylabel("Accuracy")
+    plt.title("Accuracy Over Time")
+    plt.grid(True)
+    plt.legend()
+    plt.savefig("Plots/" + model_name + "_accuracy_over_time_plot.png")
+    plt.show()
+
+
+    # Bar plot for final validation accuracy
+    # plt.figure(figsize=(5, 5))
+    # plt.bar(["Test Accuracy"], [accuracy], color="skyblue")
+    # plt.ylim(0, 1)
+    # plt.title("Final Test Accuracy")
+    # plt.ylabel("Accuracy")
+    # plt.savefig(model_name + "test_acc.png")
+    # plt.show()
 
 if __name__ == '__main__':
     main()
