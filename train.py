@@ -266,6 +266,8 @@ def main():
     plt.savefig("plots/" + model_name + "_accuracy_over_time_plot.png")
     plt.show()
 
+    save_model(model, "models/grokking_test.pt")
+
 
     # Bar plot for final validation accuracy
     # plt.figure(figsize=(5, 5))
