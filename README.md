@@ -1,9 +1,13 @@
-Part 1 and 1.5 explanation:
+Part 1
 
-The log of the training of the model on the file loveML.txt which contains the string "I love machine learning" is available in Part1Training.log, and the output itself is available in Part1Inference.log. The model checkpoint is available in the file loveML.pt
+Training: train.py (logged in Part1Training.log)
+Inference: inference.py (logged in Part1Inference.log)
+Model Checkpoint: available in the file model.pt for the loveML.txt sanity check
+How to run: To train the model on the loveML.txt dataset, simply run python train.py and the model will be run until loss is extremely low. In order to run inference, call python inference.py model.pt 50 where model.pt is the name of a model checkpoint in the local directory and 50 (or any other number) is the desired number of generated tokens (generated from scratch).
 
-In this code, I mostly did not touch the model.py file. I implemented training in train.py and inference in inference.py. I also added a setup.py file to control things like hyperparameters in order to make it easier to control those across multiple trainings and multiple models. There is also some boilerplate encoding/decoding code that did not seem suitable to be elsewhere in my opinion.
+In this code, we mostly did not touch the model.py file. We implemented training in train.py and inference in inference.py. We also created a setup.py file in order to set and store hyperparameters across multiple training runs and models. We also wrote some tokenization code to encode characters as tokens and decode the tokens back to characters.
+Challenges: While training on loveML.txt, we initially struggled to get the proper memorization behavior. However, once we increased batch_size from the model quickly exhibited the correct behavior. We believe that with the reduced batch size, the model’s updates were too stochastic and it struggled to optimize correctly. 
 
-Challenges: I at first did not realize when training on loveML.txt that in order to get the proper behavior, we needed to set batch_size precisely so that the model could memorize th whole dataset. Once I realized this, it became much simpler to implement
+Once we increased the batch size, we noticed that the model was training very slowly and converging prematurely. To solve this challenge, we increased the learning rate to 1e-3. With the increased learning rate the model converged much more quickly and seemed to reach a better optima. On the loveML.txt dataset we noticed that the loss dropped monotonically and did not oscillate. This led us to believe that our learning rate was not too high since if it was too high the loss would oscillate. In particular, because we sample the same string over and over, a high learning rate does not affect the monotonic decrease in loss.
 
-I also had some trouble getting the model to behave well and the loss to drop/converge until I realized I should increase my learning rate. This was true in general (improved behavior even on 'hard' datasets) but especially helped quick learning on the loveML.txt training (when loss drops basically monotonically)
+Finally, we got weird behavior on the loveML dataset before adjusting block_size to encompass the entire string. This makes sense because otherwise the model might see characters with incomplete context and make incorrect future predictions.
