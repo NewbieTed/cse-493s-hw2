@@ -3,4 +3,3 @@ venv/
 *~
 pyrightconfig.json
 __pycache__/
-*.pt
