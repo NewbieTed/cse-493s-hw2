@@ -6,9 +6,9 @@ import os
 # r.seed(1)
 # max = 1000
 
-train_prop = 0.7
-val_prop = 0.2
-test_prop = 0.1
+train_prop = 0.5
+val_prop = 0.25
+test_prop = 0.25
 
 names = ["97add", "97sub", "97div", "113add", "113sub", "113div"]
 

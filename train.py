@@ -217,7 +217,7 @@ def main():
     config = m.GPTConfig(block_size=block_size, vocab_size=vocab_size, n_layer=layer, n_embd=n_embd, n_head=n_head)
     model = m.GPT(config)
     model = model.to(model.config.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, betas=(0.9,0.98),weight_decay=1)
 
 
     loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 100000, 100, stoi, encode, prime, opp)
