@@ -69,6 +69,36 @@ def get_batch_multi(lines, stoi, encode):
 
     return torch.stack(x).to(device), torch.stack(y).to(device)
 
+# Prepares all data in "lines" for training/inferences.
+# Consists of blocks of lines with the result c as the target
+def get_batch_all(lines, stoi, encode):
+    x = []
+    y = []
+    for line in lines:
+        stripped_line = line.strip()
+        context_part , result_part = stripped_line.split('=')
+        context = ' ' + context_part.strip() + ' = '
+        result = result_part.strip()
+
+        if diag:
+            print(context)
+            print(result)
+
+        assert(len(encode(result)) == 1)
+
+        x_tokens = encode(context)
+        y_tokens = x_tokens[1:] + encode(result)
+        if diag:
+            print(x_tokens)
+            print(y_tokens)
+            print(len(x_tokens))
+        assert(len(x_tokens) == block_size)
+        assert(len(y_tokens) == block_size)
+        x.append(torch.tensor(x_tokens, dtype=torch.long))
+        y.append(torch.tensor(y_tokens, dtype=torch.long))
+
+    return torch.stack(x).to(device), torch.stack(y).to(device)
+
 # Do a training step
 def train_step(model, optimizer, lines, stoi, encode):
     idx, targets = get_batch_multi(lines, stoi, encode)
@@ -141,7 +171,7 @@ def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode,
 
             val_dataset = prime + opp + "val.txt"
             text, newlines = get_data(val_dataset)
-            count = test_on_batch(model, newlines, stoi, encode)
+            count = test_on_val(model, newlines, stoi, encode)
             val_acc_list.append((i, count / batch_size))
 
             count = test_on_batch(model, lines, stoi, encode)
@@ -158,6 +188,18 @@ def save_model(model, name):
 # Return the number of correct predictions on a batch
 def test_on_batch(model, lines, stoi, encode):
     x, y = get_batch_multi(lines, stoi, encode)
+    assert(len(x[0]) == block_size)
+    logits = model(x)
+    logits = logits[:, -1, :]
+    probs = F.softmax(logits, dim=-1)
+    idx_next = torch.multinomial(probs,num_samples=1)
+    idx_next = idx_next.reshape((idx_next.shape[0]))
+    y_pred = y[:, -1]
+    return (idx_next == y_pred).sum().item()
+
+# Return the number of correct predictions on a batch
+def test_on_val(model, lines, stoi, encode):
+    x, y = get_batch_all(lines, stoi, encode)
     assert(len(x[0]) == block_size)
     logits = model(x)
     logits = logits[:, -1, :]
@@ -225,7 +267,7 @@ def main():
                     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-                    loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 20010, 100, stoi, encode, prime, opp)
+                    loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 50010, 1000, stoi, encode, prime, opp)
                     loss = train_step(model, optimizer, lines, stoi, encode)
                     if loss.item() < lowest_loss:
                         lowest_loss = loss.item()
