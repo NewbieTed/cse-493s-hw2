@@ -153,11 +153,11 @@ def train_loop(model, optimizer, lines, num_iters, print_interval, stoi, encode,
 
             count = test_on_batch(model, lines, stoi, encode, batch_size)
             train_acc_list.append((i, count / batch_size))
-        if loss >= 1e-4:
+        if loss >= 1e-3:
             count = 0
         else:
             count += 1
-            if shortest_time == -100 and test_loss < 1e-4:
+            if shortest_time == -100 and test_loss < 1e-3:
                 shortest_time = count
                 # return shortest_time, loss_list, val_acc_list, train_acc_list
             
@@ -208,7 +208,7 @@ def main():
     opps = ["add", "sub", "div"]
     done = False
 
-    batch_sizes = [8, 16, 32, 64, 128, 256, 512, 1024]
+    batch_sizes = [32, 48, 64, 128, 192]
 
     counts = []
     for batch_size in batch_sizes:
@@ -241,7 +241,7 @@ def main():
         optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
-        shortest_time, loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 60010, 100, stoi, encode, prime, opp, batch_size)
+        shortest_time, loss_list, val_acc_list, train_acc_list = train_loop(model, optimizer, lines, 80010, 100, stoi, encode, prime, opp, batch_size)
         loss = train_step(model, optimizer, lines, stoi, encode, batch_size)
 
         dataset = "data/" + prime + opp + "test.txt"
