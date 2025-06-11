@@ -1,9 +1,18 @@
-Part 2 Explanation:
+*2.1*
+Data generation: gen_data.py
+Generated data: /data
 
-2.1:
-As you can see from the file gen_data.py, for each number prime, for each operation, I took the pairs of numbers a,b such that 0 <= a,b < prime. For each a,b, I calculated the result of the desired operation. I randomly split each of these training points such that 70% of them ended up in training, 20% in validation, and 10% of them in testing datasets. Based on the paper, it seemed best for much of my data to be for training. Data is findable in the data directory.
+As you can see in the file gen_data.py, for each prime number p and each operation, we took the generated pairs of numbers a,b such that 0 <= a,b < p. For each a,b, we calculated the result of the desired operation, then we randomly split each of these training points such that 70% of them ended up in training, 20% in validation, and 10% of them in testing datasets. Based on the paper, it seemed best for much of the data to be for training. Data is available in the /data directory.
 
-2.2:
-A name such as 97add0layer1 means that whatever file associated with it was trained for the number 97, for the operation add, on the first random restart, with 1 layers. With this in mind, all the logs are findable in the logs directory, all the models in the model directory, and all graphs in the plots directory. The logs can give perhaps more information on the change in loss over time than the graphs can.
 
-Note: Sometimes training acc is slightly lower than it should be. Due to floating point issues, sometimes loss overflows/the optimizer gets confused and loss shoots up after getting too low. If the model ends inconnveniently close to one of these spikes, testing accuracy might be low. I should probably have done some sort of checkpoint/early stopping to handle this, but considering the compute necessary to train 24(!) models, I didn't want to rerun it. Looking at the loss progression should give a good sense of how good a model is. Note this is the case for 113add0layer2test_acc.png and perhaps others.
+*2.2*
+Model checkpoints: /models directory.
+A name such as 97add0layer1 refers to a model trained on p=97 for the modulo addition task, 0th random restart, with 1 feed-forward layer. [Prime][Operation][Random Restart #]layer[# layers]
+Plots: /plots directory. 
+The naming scheme is the same as above.
+Logs: /Logs directory.
+The naming scheme is the same as above.
+
+We plot train loss over time against optimization steps for each seed and model. We additionally plot the final test accuracy of the model after training is completed. This information is included in the plots directory and also included in the appropriate log file inside of Logs/ (the test accuracy is printed at the end of the log).
+
+Note: Sometimes training/validation accuracy is slightly lower than it should be. Due to some peculiar optimizer issues, especially when loss gets very low, loss shoots up and accuracy decreases. If the model training ends inconveniently close to one of these spikes, testing accuracy might be low. We probably should have done some sort of checkpoint/early stopping to handle this, but considering the compute necessary to train 24(!) models, we didn't want to rerun it. Looking at the loss progression should give a good sense of how good a model is.
