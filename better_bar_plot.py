@@ -1,17 +1,17 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-batch_sizes = [8, 16, 32, 64, 128, 256, 512, 1024]
-times = [-100, -100, 1, -100, -100, 339, 566, 1056]
+batch_sizes = [32, 48, 64, 128, 192, 256, 512, 1024]
+times = [3, 1, 126, 178, -100, 339, 566, 1056]
 
 log_batch_sizes = np.log2(batch_sizes)
 
 plt.figure(figsize=(10, 6))
-bar_width = 0.5
+bar_width = 0.3
 bars = plt.bar(log_batch_sizes, times, width=bar_width, color='skyblue', edgecolor='black')
 
 plt.xticks(log_batch_sizes, labels=[str(i) for i in batch_sizes])
-plt.xlabel('Batch Size (log scale)')
+plt.xlabel('Batch Size')
 plt.ylabel('Time')
 plt.title('Time vs Batch Size')
 plt.grid(axis='y', linestyle='--', alpha=0.7)
@@ -25,6 +25,6 @@ for bar in bars:
         ha='center', va='bottom' if height >= 0 else 'top', fontsize=9
     )
 
-plt.savefig("better_bar_plot.png")
+plt.savefig("generalization_vs_batch_size_bar_plot.png")
 
 plt.show()
