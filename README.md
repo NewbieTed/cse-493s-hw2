@@ -1,4 +1,5 @@
-**Homework 2**
+**CSE 493S Homework 2**
+
 Group Members: Nash Rickert, Yixuan Wang, Sidharth Rajagopal, Hady Fawal
 
 Instructions:
