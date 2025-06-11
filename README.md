@@ -1,3 +1,6 @@
+**Homework 2**
+Group Members: Nash Rickert, Yixuan Wang, Sidharth Rajagopal, Hady Fawal
+
 Instructions:
 
 The results for part 1 and 1.5 can be found in the part-1-submission branch.
