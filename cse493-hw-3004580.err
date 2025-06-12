@@ -1,0 +1,6 @@
+Loading CUDA/11.1.1-GCC-10.2.0
+  Loading requirement: GCCcore/10.2.0 zlib/1.2.11-GCCcore-10.2.0
+    binutils/2.35-GCCcore-10.2.0 GCC/10.2.0 CUDAcore/11.1.1
+/home/c64c542/cse-493s-hw2/train.py:320: RuntimeWarning: More than 20 figures have been opened. Figures created through the pyplot interface (`matplotlib.pyplot.figure`) are retained until explicitly closed and may consume too much memory. (To control this warning, see the rcParam `figure.max_open_warning`). Consider using `matplotlib.pyplot.close()`.
+  plt.figure(figsize=(10, 5))
+DeprecationWarning: 'source deactivate' is deprecated. Use 'conda deactivate'.
